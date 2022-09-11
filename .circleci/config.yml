@@ -5,35 +5,22 @@ version: 2.1
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
-  say-hello:
-    # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
-    # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
-    docker:
-      - image: cimg/base:stable
-    # Add steps to the job
-    # See: https://circleci.com/docs/2.0/configuration-reference/#steps
-    steps:
-      - checkout
+  build:
+    environment:
+      _JAVA_OPTIONS: "-Xmx2g"
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2"
+    docker: # run the steps with Docker
+      - image: cimg/openjdk:17.0.1 # ...with this image as the primary container; this is where all `steps` will run
+    steps: # a collection of executable commands
+      - checkout # check out source code to working directory
+      # Read about caching dependencies: https://circleci.com/docs/caching/
       - run:
-          name: "Say hello"
-          command: "echo Hello, World!"
-  clean-build:
-    # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
-    # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
-    docker:
-      - image: cimg/base:stable
-    # Add steps to the job
-    # See: https://circleci.com/docs/2.0/configuration-reference/#steps
-    steps:
-      - checkout
-      - run:
-          name: "Clean Build"
-          command: "./gradlew clean build"
-
-# Invoke jobs via workflows
-# See: https://circleci.com/docs/2.0/configuration-reference/#workflows
+          name: Run tests in parallel # See: https://circleci.com/docs/parallelism-faster-jobs/
+          # Use "./gradlew test" instead if tests are not run in parallel
+          command:  ./gradlew assemble
+      - store_artifacts:
+          path: build/libs
 workflows:
   say-hello-workflow:
     jobs:
-      - say-hello
-      - clean-build
+      - build
